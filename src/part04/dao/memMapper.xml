@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  <mapper namespace = "per">
+  	<select id="all" resultType="part04.dto.MemDTO">
+  		SELECT * FROM mem ORDER BY num
+  	</select>
+  	
+  	<select id="keyNum" resultType="java.lang.Integer" flushCache="true">
+  		SELECT mem_num_seq.nextval
+  		FROM dual
+  	</select>
+  	
+  	<!-- 다중 insert	 -->
+  	<!-- 
+  		INSERT ALL 
+  		INTO mem(num, name, age, loc)
+  		VALUES(1,'홍길동',30,'서울')
+  		
+  		INTO mem(num, name, age, loc)
+  		VALUES(2,'유대리',29,'경기')
+  		
+  		SELECT * FROM dual;
+  	 -->
+  	 
+  	 <!-- list, array로 받을경우 parameterType 생략가능 -->
+  	 <insert id="multiIns" parameterType="java.util.List">
+  	 	INSERT ALL
+  	 	<!-- 반복되는 것을 간략히 하기위해 foreach가 제공됨 -->
+  	 	<foreach collection="list" item="element" index="no">
+  	 	INTO mem
+  	 	<!-- mem_num_seq.nextval을 바로 넣게 되면 같은 숫자가 나오게 되므로 따로 나누어서 중간에 삽입하는 식으로 작업을 진행한다. -->
+  		VALUES(#{element.num},#{element.name},#{element.age},#{element.loc})
+  	 	</foreach>
+  	 	SELECT * FROM dual
+  	 </insert>
+  	 
+  	 <!-- 다중 delete -->
+  	 <delete id="multiDel">
+  	 	DELETE FROM mem
+  	 	WHERE num IN(
+  	 	<foreach collection="list" item="element" separator=",">
+  	 		#{element}
+  	 	</foreach>
+  	 	)
+  	 </delete>
+  	 
+  	 <delete id="multiDel2">
+  	 	DELETE FROM mem
+  	 	WHERE num IN(
+  	 	<foreach collection="array" item="element" separator=",">
+  	 		#{element}
+  	 	</foreach>
+  	 	)
+  	 </delete>
+  	 
+  	 <!-- dynamic if -->
+  	 <select id="search" parameterType="part04.dto.MemDTO"
+  	 	resultType="part04.dto.MemDTO">
+  	 	SELECT * FROM mem
+  	 	<!-- <where>안에다 넣게 되면 원하는 값이 안 넘어올 경우 오류가 발생할 수 있다.
+  	 		그런 현상을 제거하기 위해 사용 -->
+  	 	<!-- 
+  	 	<where>
+  	 		<if test="name!=null">
+  	 			name like '%' || #{name} || '%'
+  	 		</if>
+  	 		<if test="age!=0">
+  	 			or age > #{age}
+  	 		</if>
+  	 	</where>
+  	 	 -->
+  	 	 
+  	 	 <!-- 
+  	 	 prefix, suffix - 해당하는 구문(where)/ 
+  	 	 prefixOverrides, suffixOverrides - 제거할 구문(or, and) 
+  	 	 앞에 있으면 prefixOverrides, 
+  	 	 뒤에 있으면 suffixOverrides
+  	 	 -->
+  	 	 <trim prefix="where" suffixOverrides="or|and">
+  	 	 	<if test="name!=null">
+  	 			name like '%' || #{name} || '%' or
+  	 		</if>
+  	 		<if test="age!=0">
+  	 			age > #{age}
+  	 		</if>
+  	 	 </trim>
+  	 </select>
+  	 
+  	 <!-- 다중 update -->
+  	 <update id="multiUpt" parameterType="part04.dto.MemDTO">
+  	 	UPDATE mem
+  	 	<!--
+  	 	<set>
+  	 		<if test="name!=null">
+  	 			name=#{name},
+  	 		</if>
+  	 		<if test="age!=0">
+  	 			age=#{age},
+  	 		</if>
+  	 		<if test="loc!=null">
+  	 			loc=#{loc}
+  	 		</if>
+  	 	</set>
+  	 	  -->
+  	 	<trim prefix="set" suffixOverrides=",">
+  	 		<if test="name!=null">
+  	 			name=#{name},
+  	 		</if>
+  	 		<if test="age!=0">
+  	 			age=#{age},
+  	 		</if>
+  	 		<if test="loc!=null">
+  	 			loc=#{loc}
+  	 		</if>
+  	 	</trim>
+  	 	WHERE num=#{num}
+  	 </update>
+  	 
+  	 <!-- choose 동적 SQL사용 -->
+  	 <insert id="insData" parameterType="part04.dto.MemDTO">
+  	 	INSERT INTO mem VALUES(mem_num_seq.nextval, #{name}, #{age}, 
+  	 	<choose>
+  	 		<when test="loc==null">
+  	 			'test'
+  	 		</when>
+  	 		<otherwise>
+  	 			#{loc}
+  	 		</otherwise>
+  	 	</choose>
+  	 	)
+  	 </insert>
+  </mapper>
